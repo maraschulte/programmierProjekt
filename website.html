@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+
+    <head>
+        <meta charset="utf-8">
+        <title>Programmierprojekt</title>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI=" crossorigin="" />
+        <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
+    </head>
+    
+    <body>
+        
+        <h1>Programmierprojekt Routenplaner</h1>
+
+        <div id="map"></div>
+
+        <div id="buttons">
+            <button type="button" onclick="clickedCalculateDistance()">Calculate Distance</button>
+            <button type="button" onclick="clickedReset()">Reset</button>
+        </div>
+        <br>
+        
+        <h4>Set nodes:</h4>
+        <br>
+        <h4 id="startNode">Click on map to set the start node.</h4>
+        <br>
+        <h4 id="endNode">After you set the start node, click again on map to set the end node.</h4>
+        <br>
+
+        <h4>The distance is:  <br></h4>
+        <br>
+
+
+        <footer>
+            <p>Navina Silatchom Mboute, Julia Onyems, Mara Schulte </p>
+        </footer>
+
+
+        <!-- style is just so that everything looks nice and clean, not really important-->
+        <style>
+            html {
+                background: #e6e9e9;
+                background-image: linear-gradient(270deg, rgb(230, 233, 233) 0%, rgb(216, 221, 221) 100%);
+                -webkit-font-smoothing: antialiased;
+            }
+
+            body {
+                background: #fff;
+                box-shadow: 0 0 2px rgba(0, 0, 0, 0.06);
+                color: #545454;
+                font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+                font-size: 16px;
+                line-height: 1.5;
+                margin: 0 auto;
+                max-width: 75%;
+                padding: 2em 2em 4em;
+            }
+
+            h1, h2, h3, h4, h5, h6 {
+                color: #222;
+                display: inline;
+            }
+            
+
+            #map {
+                width:100%; 
+                height:500px;
+                margin-top: 20px;
+                margin-bottom: 20px;
+
+            }
+
+            #buttons {
+                width: 1000px; 
+                height: 100px; 
+                display: inline;
+                
+            }
+            
+            button {
+                width: 24.5%;               
+                height: 50px;
+                float: right;
+                margin-left: 10px;
+            }
+
+            footer{
+                background-color: #ccc7c7;
+                width: 75%; 
+                position: absolute; 
+                text-align: center;
+            }
+        </style>
+       
+        <script type="text/javascript">
+            //var map = Karteanlegen(Welcher div Container).woIstDasZentrumDerKarte([Breitengrad, Längengrad], Zoomstufe (0 = ganze Welt))
+            var map = L.map('map').setView([48.745837, 9.105398], 15);
+            //Wie soll Karte aussehen = Mosaikbauteile
+            //TilesHerunterLaden mit z= Zoomlevel, x,y= BreitenundLängengrad
+            L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {maxZoom: 19, attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMep</a> contributers'}).addTo(map);
+            //Add layer to map
+            var myFeatureLayer = L.layerGroup().addTo(map);
+
+
+
+            //Add a marker at university of stuttgart onto the layer
+            //var marker = L.marker([48.745837, 9.105398]).addTo(myFeatureLayer);
+
+
+            //Initaliziere verschiedene Dinge I guess
+            var startNode = document.getElementById("startNode");
+            var endNode = document.getElementById("endNode");
+            var latlngs = Array();
+
+
+            //Sets markers, popups, start and end Node when user clicks on the map.
+            map.on('click', onMapClick);     
+            function onMapClick(e) {
+                var markerMouseclick = L.marker();
+                var popup = L.popup();
+                
+                //Set start and end node when clicking on the map - if they are not set yet
+                if (startNode.innerHTML == "Click on map to set the start node."){
+                    //Set marker
+                    markerMouseclick
+                    .setLatLng(e.latlng)
+                    .addTo(myFeatureLayer);
+                    //Create popup
+                    popup
+                    .setLatLng(e.latlng)
+                    .setContent("You clicked the map at " + e.latlng.toString() + "this is your start node.")
+                    .openOn(myFeatureLayer);
+                    
+                    //write cords onto website
+                    startNode.innerHTML = "Start Node is at: " + e.latlng.toString();
+                    //ForPolyline later
+                    latlngs.push(e.latlng);
+
+                } else if (endNode.innerHTML == "After you set the start node, click again on map to set the end node."){
+                    //Set marker
+                    markerMouseclick
+                    .setLatLng(e.latlng)
+                    .addTo(myFeatureLayer);
+                    //Create popup
+                    popup
+                    .setLatLng(e.latlng)
+                    .setContent("You clicked the map at " + e.latlng.toString() + "this is your end node.")
+                    .openOn(myFeatureLayer);
+
+                    //write cords onto website
+                    endNode.innerHTML = "End Node is at: " + e.latlng.toString();
+                    //For Polylinelater
+                    latlngs.push(e.latlng);
+
+                    //Create polyline between start and end node
+                    setPolyline();
+                } else {
+                    //If user tries to click more than twice on the map
+                    window.alert("Click the reset button to set new nodes.")
+                }
+            }
+
+            //Draws line between markers
+            function setPolyline(){
+                //Create a red polyline from an array of LatLng points
+                var polyline = L.polyline(latlngs, {color: 'red'}).addTo(myFeatureLayer);
+                //Zoom the map to the polyline
+                map.fitBounds(polyline.getBounds());
+
+            }
+            
+          
+            //TODO mithilfe von Backend stuff
+            function clickedCalculateDistance(){
+                window.alert("TODO");        
+                
+            }
+
+            //Reset everything - nodes, polyline, zoom, array, ... 
+            function clickedReset(){
+                startNode.innerHTML = "Click on map to set the start node.";
+                endNode.innerHTML = "After you set the start node, click again on map to set the end node.";
+                
+                latlngs = [];
+                myFeatureLayer.clearLayers();
+                map.setView([48.745837, 9.105398], 15);
+
+                window.alert("You reset the nodes. Please set new nodes");
+            }
+
+
+
+            //IN PROGRESS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+            //Doesen't do anything rn
+            function loadDoc(){
+                var xhttp = new XMLHttpRequest();
+                //Function to be called when the readyState proberty changes
+                xhttp.onreadystatechange = function() {
+                    //ReadyState hold the status of the request
+                    // 4 = request finished and response is ready
+                    // 200 = staus number is ok
+                    if (this.readyState == 4 & this.state == 200){
+                        //demo = the response Data as a string
+                        document.getElementById("demo").innerHTML= this.responseText;
+                    }
+                };
+                //syntax: open(method, url, async) 
+                //method = type of request (get or post)
+                //the server file location
+                //true = asynchronous
+                xhttp.open("GET", ajax_info.text, true);
+                //Sends the request to the server
+                xhttp.send();
+            }
+            
+            
+            
+
+            //Don't actually know why the next three lines are here, maybe we need them later
+            //L.geoJSON(geojsonFeature).addTo(map);
+            //var myLayer = L.geoJSON().addTo(map);
+            //myLayer.addData(geojsonFeature);
+
+        </script>
+        
+    </body>
+</html>
